@@ -55,7 +55,9 @@ and the settings each rule looked at (names, modes, counts): no passphrases, key
 the call fails, the digest goes out with the rules' own wording. A digest that can't be delivered is
 retried at the next check, without asking the model again.
 
-`python -m unifi_agent --digest` sends the digest now.
+`python -m unifi_agent --digest` (in the container: `docker exec unifi-agent python -m unifi_agent --digest`)
+sends the digest now. It doesn't count as the weekly one: the next weekly digest still marks items new or
+fixed against the last weekly digest.
 
 ## The UniFi MCP server
 

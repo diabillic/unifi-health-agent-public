@@ -84,9 +84,9 @@ def main() -> None:
     runtime = Runtime("unifi", revision=_revision())
     writeups: dict = {}
     if args.digest:
-        delivered = send_digest(advisor, notifier, cfg, writeups)
-        state.save()
-        raise SystemExit(0 if delivered else 1)
+        # Not saved: the running agent owns the state file (it would overwrite this anyway), and a
+        # digest on demand shouldn't change what the weekly one marks as new or fixed.
+        raise SystemExit(0 if send_digest(advisor, notifier, cfg, writeups) else 1)
     health.reset()
     if cfg.bus_token and cfg.bus_port and not args.once:
         # No destructive tools, so no approval channel is needed.
