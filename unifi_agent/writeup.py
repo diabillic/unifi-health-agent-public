@@ -33,7 +33,8 @@ def write_up(cfg: Config, advice: list[Advice], session: requests.Session | None
         return None
     items = [{"priority": a.priority, "area": a.area, "finding": a.summary, "fix": a.fix, "facts": a.facts} for a in advice]
     system = PROMPT + (f"\n\nAbout this network, from its owner: {cfg.network_notes}" if cfg.network_notes else "")
-    body = {"model": cfg.opencode_model, "max_tokens": 2048, "messages": [
+    # Reasoning models spend 2000+ tokens thinking before they write; too low a cap leaves no text
+    body = {"model": cfg.opencode_model, "max_tokens": 8192, "messages": [
         {"role": "system", "content": system},
         {"role": "user", "content": json.dumps(items, default=str)}]}
     http = session or requests.Session()
@@ -42,8 +43,11 @@ def write_up(cfg: Config, advice: list[Advice], session: requests.Session | None
             "Authorization": f"Bearer {cfg.opencode_api_key}", "User-Agent": USER_AGENT,
             "x-opencode-session": str(uuid.uuid4())})  # OpenCode Go wants one id per conversation
         resp.raise_for_status()
-        text = (resp.json()["choices"][0]["message"].get("content") or "").strip()
+        choice = resp.json()["choices"][0]
+        text = (choice["message"].get("content") or "").strip()
     except (requests.RequestException, KeyError, IndexError, ValueError) as exc:
         log.error("AI write-up via OpenCode Go failed: %s", exc)
         return None
+    if not text:
+        log.error("AI write-up via OpenCode Go was empty (finish_reason %s)", choice.get("finish_reason"))
     return text or None
